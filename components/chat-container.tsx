@@ -93,6 +93,7 @@ export function ChatContainer() {
   async function callPipeline(reelUrl: string, destination?: string) {
     setIsTyping(true)
     try {
+      // Start the pipeline job
       const response = await fetch("https://reeltotrip-backend.onrender.com/pipeline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -101,14 +102,29 @@ export function ChatContainer() {
 
       if (!response.ok) throw new Error("Pipeline request failed")
 
-      const data: { conversationId?: string; summary?: string } = await response.json()
-      if (data.conversationId) setConversationId(data.conversationId)
+      const { jobId } = await response.json()
+      if (!jobId) throw new Error("No jobId returned")
 
-      addBotMessage(
-        formatSummary(data.summary) ||
-        "I couldn't generate a trip for that reel. Please try a different link."
-      )
-      setFlowState("active")
+      // Poll for result every 5 seconds (pipeline takes 1-3 min)
+      const maxAttempts = 40 // 40 × 5s = 200s max wait
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 5000))
+        const poll = await fetch(`https://reeltotrip-backend.onrender.com/pipeline/status/${jobId}`)
+        const data = await poll.json()
+
+        if (data.status === "done") {
+          if (data.conversationId) setConversationId(data.conversationId)
+          addBotMessage(formatSummary(data.summary) || "I couldn't generate a trip for that reel.")
+          setFlowState("active")
+          setIsTyping(false)
+          return
+        }
+        if (data.status === "error") {
+          throw new Error(data.error || "Pipeline failed")
+        }
+        // still pending — keep polling
+      }
+      throw new Error("Pipeline timed out")
     } catch {
       addBotMessage("Something went wrong while processing that reel. Please check the link and make sure the server is running.")
       setFlowState("idle")
