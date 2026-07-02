@@ -93,7 +93,7 @@ export function ChatContainer() {
   async function callPipeline(reelUrl: string, destination?: string) {
     setIsTyping(true)
     try {
-      const response = await fetch("http://localhost:3000/pipeline", {
+      const response = await fetch("https://reeltotrip-backend.onrender.com/pipeline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reelUrl, currency: "USD", ...(destination ? { destination } : {}) }),
@@ -122,7 +122,7 @@ export function ChatContainer() {
     if (!conversationId) return
     setIsTyping(true)
     try {
-      const response = await fetch("http://localhost:3000/conversation", {
+      const response = await fetch("https://reeltotrip-backend.onrender.com/conversation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId, message, currency: "USD" }),
@@ -169,7 +169,7 @@ export function ChatContainer() {
       // Use Groq to understand what the user actually means
       setIsTyping(true)
       try {
-        const groqRes = await fetch("http://localhost:3000/clarify", {
+        const groqRes = await fetch("https://reeltotrip-backend.onrender.com/clarify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: text, inferredDestination: pendingInferredDestination }),
@@ -209,7 +209,7 @@ export function ChatContainer() {
 
       // Try to get a destination guess from context + Groq
       try {
-        const res = await fetch("http://localhost:3000/interpret", {
+        const res = await fetch("https://reeltotrip-backend.onrender.com/interpret", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
